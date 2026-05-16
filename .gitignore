@@ -1,0 +1,42 @@
+# Models & training outputs
+outputs/
+*.safetensors
+*.pth
+*.pt
+*.ckpt
+
+# Dataset
+data/lerobot_dataset/
+*.mp4
+*.parquet
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+
+# Conda
+.env/
+*.env
+
+# IDE
+.vscode/
+.idea/
+
+# Third-party
+piper_sdk_py_driver/
+
+# Large files
+*.log
+/tmp/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Incomplete datasets
+data/lerobot_dataset_incomplete*/
+data/*.png
+
+# Claude config
+.claude/

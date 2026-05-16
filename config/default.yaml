@@ -1,0 +1,42 @@
+# Piper Bottle Grasp — Default Configuration
+# ==============================================
+
+# --- Robot arms ---
+robots:
+  follower:
+    can_port: "can0"
+    gripper_exist: true
+  leader:
+    can_port: "can1"
+    gripper_exist: true
+
+# --- Cameras ---
+cameras:
+  wrist:
+    type: "realsense"        # D435/D435i depth camera on end-effector
+    serial: ""               # leave empty to auto-detect, or set serial number
+    width: 640
+    height: 480
+    fps: 30
+    enable_depth: true
+  global:
+    type: "usb"              # SN0002 5MP USB camera behind/above the arm
+    device_id: "auto"        # scan /dev/video*, or set "/dev/videoX"
+    width: 640
+    height: 480
+    fps: 30
+
+# --- Data collection ---
+collection:
+  save_dir: "data/episodes"
+  episode_prefix: "bottle_grasp"
+  control_rate_hz: 50        # how often to read leader & command follower
+  image_rate_hz: 15          # how often to capture camera frames
+  gripper_mapping: "direct"  # "direct" = leader gripper → follower gripper
+  joint_mapping: "direct"    # "direct" = identical joint angles (same arm model)
+
+# --- Safety ---
+safety:
+  joint_limit_rad: 3.14      # reject commands exceeding this
+  max_gripper_m: 0.035       # gripper max opening
+  follower_scaling: 1.0      # scale factor for leader→follower joint mapping
