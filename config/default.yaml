@@ -1,0 +1,56 @@
+# Piper Bottle Pick & Place Aside — Diffusion Policy Configuration
+# ============================================================
+# Hardware: Piper dual-arm (leader + follower) on shared CAN bus.
+#   - Data collection: human drags leader, follower mirrors via CAN hardware.
+#     Both arms connected on can0.
+#   - Inference: only follower is connected & controlled. Diffusion Policy
+#     outputs absolute joint targets for the follower.
+# ============================================================
+
+# --- Robot arms ---
+robots:
+  follower:                     # 从臂 — 执行抓取，推理时唯一使用的臂
+    can_port: "can0"
+    gripper_exist: true
+  leader:                       # 主臂 — 仅数据采集时使用（人手拖动示教）
+    can_port: "can1"
+    gripper_exist: true
+
+# --- Cameras ---
+cameras:
+  wrist:
+    type: "realsense"        # D435/D435i depth camera on end-effector
+    serial: ""               # leave empty to auto-detect, or set serial number
+    width: 640
+    height: 480
+    fps: 30
+    enable_depth: true
+  global:
+    type: "usb"              # SN0002 5MP USB camera behind/above the arm
+    device_id: "auto"        # scan /dev/video*, or set "/dev/videoX"
+    width: 640
+    height: 480
+    fps: 30
+
+# --- Data collection ---
+collection:
+  save_dir: "data/episodes"
+  episode_prefix: "bottle_pick_place_aside"
+  control_rate_hz: 50        # how often to read leader & command follower
+  image_rate_hz: 15          # how often to capture camera frames
+  gripper_mapping: "direct"  # "direct" = leader gripper -> follower gripper
+  joint_mapping: "direct"    # "direct" = identical joint angles (same arm model)
+
+# --- Inference (Diffusion Policy deployment) ---
+inference:
+  can_port: "can0"           # only follower is connected
+  control_rate_hz: 10        # match the dataset fps unless you intentionally retime actions
+  velocity_pct: 25
+  max_steps: 200
+  gripper_open: 0.08         # metres, keep gripper open during approach
+
+# --- Safety ---
+safety:
+  joint_limit_rad: 3.14      # reject commands exceeding this
+  max_gripper_m: 0.101       # gripper max opening
+  follower_scaling: 1.0      # scale factor for leader->follower joint mapping

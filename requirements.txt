@@ -1,0 +1,38 @@
+# ============================================================
+# Piper Bottle Grasp — Dependencies
+# Install in a dedicated venv/conda environment:
+#   python3 -m venv ~/piper_lerobot_env
+#   source ~/piper_lerobot_env/bin/activate
+#   pip install -r requirements.txt
+# ============================================================
+
+# LeRobot (Diffusion Policy, dataset, training)
+lerobot>=0.4.0
+
+# PyTorch (CUDA 12.x)
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Vision
+opencv-python>=4.8.0
+pyrealsense2>=2.55.0
+
+# LeRobot deps
+datasets>=3.0.0
+pyarrow>=14.0.0
+pandas>=2.0.0
+av>=11.0.0
+draccus>=0.10.0
+huggingface-hub>=0.30.0
+packaging>=24.0
+setuptools>=71.0.0
+
+# ROS2 driver
+scipy>=1.10.0
+
+# Utilities
+# Keep NumPy 1.x unless all native wheels in the environment were built for NumPy 2.
+numpy>=1.24.0,<2.0
+tqdm>=4.65.0
+einops>=0.6.0
+matplotlib>=3.8.0
