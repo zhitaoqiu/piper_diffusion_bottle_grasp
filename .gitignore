@@ -39,5 +39,8 @@ Thumbs.db
 data/lerobot_dataset_incomplete*/
 data/*.png
 
+# Reference projects (read-only)
+expert/
+
 # Claude config
 .claude/

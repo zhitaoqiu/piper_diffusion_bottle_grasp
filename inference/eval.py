@@ -13,7 +13,7 @@ Usage:
     --dataset-root data/lerobot_dataset
 """
 
-import argparse, sys, time
+import argparse, json, os, sys, time
 from pathlib import Path
 
 import numpy as np
@@ -25,6 +25,19 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 JOINT_NAMES = ["J1", "J2", "J3", "J4", "J5", "J6", "Grip"]
+
+
+def parse_episodes(value: str):
+    """Parse --episodes: 'all' -> None (all episodes), int -> number."""
+    if value.lower() == "all":
+        return None
+    try:
+        n = int(value)
+        if n < 0:
+            raise argparse.ArgumentTypeError("--episodes must be >= 0 or 'all'")
+        return n
+    except ValueError:
+        raise argparse.ArgumentTypeError("--episodes must be an integer or 'all'")
 
 
 def resolve_device(device_arg: str, allow_cpu: bool) -> torch.device:
@@ -52,8 +65,8 @@ def main():
     parser.add_argument("--checkpt", type=str, required=True)
     parser.add_argument("--dataset-root", type=str, default="data/lerobot_dataset")
     parser.add_argument("--dataset-repo-id", type=str, default="piper/bottle_pick_place_aside")
-    parser.add_argument("--episodes", type=int, default=0,
-                        help="Number of episodes to evaluate (0 = all)")
+    parser.add_argument("--episodes", type=parse_episodes, default=None,
+                        help="Number of episodes to evaluate ('all' or integer, default: all)")
     parser.add_argument("--device", type=str, default="auto")
     parser.add_argument("--allow-cpu", action="store_true")
     parser.add_argument("--seed", type=int, default=42,
@@ -108,7 +121,7 @@ def main():
     print(f"  {dataset.num_episodes} episodes, {len(dataset)} frames")
 
     total_eps = dataset.num_episodes
-    n_eval = args.episodes if args.episodes > 0 else total_eps
+    n_eval = args.episodes if args.episodes is not None else total_eps
     episode_indices = list(range(n_eval))
     print(f"Evaluating episodes: {episode_indices}")
 
@@ -182,11 +195,11 @@ def main():
     t_total = time.perf_counter() - t_start
 
     # --- Aggregate ---
-    all_gt = np.concatenate(all_gt, axis=0)
-    all_pred = np.concatenate(all_pred, axis=0)
-    # Keep per-episode arrays for per-episode range_ratio
-    ep_gt_list = [g for g, _ in zip(all_gt_list, all_pred_list)]
-    ep_pred_list = [p for _, p in zip(all_gt_list, all_pred_list)]
+    all_gt = np.concatenate(all_gt_list, axis=0)
+    all_pred = np.concatenate(all_pred_list, axis=0)
+    # Aliases for per-episode range_ratio computation
+    ep_gt_list = all_gt_list
+    ep_pred_list = all_pred_list
     overall_mse = float(np.mean((all_gt - all_pred) ** 2))
 
     print(f"\n{'=' * 60}")
