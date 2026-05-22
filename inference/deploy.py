@@ -161,9 +161,9 @@ def frame_image(frame):
 def build_preview(wrist_frame, global_frame, text: str, color=(0, 255, 0)):
     frames = []
     if wrist_frame is not None:
-        frames.append(wrist_frame.rgb.copy())
+        frames.append(cv2.cvtColor(wrist_frame.rgb, cv2.COLOR_RGB2BGR))
     if global_frame is not None:
-        frames.append(global_frame.rgb.copy())
+        frames.append(cv2.cvtColor(global_frame.rgb, cv2.COLOR_RGB2BGR))
 
     if not frames:
         preview = np.zeros((480, 640, 3), dtype=np.uint8)
@@ -490,9 +490,11 @@ def main():
                     )
                     if step % 20 == 0:
                         if wrist_frame is not None:
-                            cv2.imwrite(str(rollout_dir / f"wrist_{step:04d}.jpg"), wrist_frame.rgb)
+                            cv2.imwrite(str(rollout_dir / f"wrist_{step:04d}.jpg"),
+                                        cv2.cvtColor(wrist_frame.rgb, cv2.COLOR_RGB2BGR))
                         if global_frame is not None:
-                            cv2.imwrite(str(rollout_dir / f"global_{step:04d}.jpg"), global_frame.rgb)
+                            cv2.imwrite(str(rollout_dir / f"global_{step:04d}.jpg"),
+                                        cv2.cvtColor(global_frame.rgb, cv2.COLOR_RGB2BGR))
 
                 # ── Send to robot ──
                 if not args.dry_run:

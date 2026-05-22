@@ -150,6 +150,66 @@ python3 inference/deploy.py --checkpt <path> --no-gui
 python3 inference/deploy.py --checkpt <path> --save-rollout
 ```
 
+## ACT adapter_v2 数据路线
+
+ACT 项目里已经验证过一条更稳定的 `adapter_v2` 路线：
+
+- 固定起点，7 维绝对关节目标 `[j1..j6, gripper]`
+- 单全局相机 `observation.images.global_rgb`
+- 10 条基线数据 + 15 条补采数据，默认剔除补采数据中的坏 `episode 9`
+
+当前仓库用重建导入方式生成 Diffusion 训练集，导入后 LeRobot 会重新
+计算 24 条数据的 `stats.json`：
+
+```bash
+conda activate piper_act
+python3 scripts/import_adapter_v2_24demo.py
+```
+
+导入默认读取：
+
+```text
+/home/huatec/piper_act_bottle_grasp/data/lerobot_dataset_piper_bottle_adapter_v2_10demo
+/home/huatec/piper_act_bottle_grasp/data/lerobot_dataset_piper_bottle_adapter_v2_new_demos
+```
+
+输出到：
+
+```text
+data/lerobot_dataset_piper_bottle_adapter_v2_24demo
+```
+
+训练 Diffusion：
+
+```bash
+bash training/train_adapter_v2_diffusion.sh
+```
+
+先做离线评估：
+
+```bash
+python3 inference/eval.py \
+    --checkpt outputs/train/diffusion_adapter_v2_24demo/checkpoints/last/pretrained_model \
+    --dataset-root data/lerobot_dataset_piper_bottle_adapter_v2_24demo \
+    --dataset-repo-id piper/adapter_v2_24demo_diffusion
+```
+
+`inference/deploy.py` 仍保留当前 approach-only 安全逻辑，会强制保持夹爪
+打开。训练 `adapter_v2` 完整轨迹 checkpoint 后，使用单独入口让 Diffusion
+控制夹爪和完整轨迹：
+
+```bash
+python3 inference/deploy_adapter_v2.py \
+    --checkpt outputs/train/diffusion_adapter_v2_24demo/checkpoints/last/pretrained_model \
+    --global-camera /dev/video6 \
+    --can-port can0 \
+    --debug-actions
+```
+
+这个入口默认会用 `config/adapter_v2_start_pose.json` 做起点守卫，未回到
+`adapter_v2` 起始区域时不会发起一条新轨迹。建议先加 `--dry-run` 看动作
+输出，再做真机执行。
+
 ## 已知问题
 
 ### NumPy 版本

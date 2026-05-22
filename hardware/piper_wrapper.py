@@ -110,10 +110,16 @@ class PiperRobot(Robot):
         logger.info(f"{self} connected on {self.config.can_port}.")
 
     def disconnect(self) -> None:
-        """Disable motors (if configured) and close CAN port."""
+        """Disconnect safely; preserve the SDK session when torque must stay on."""
         if not self.is_connected:
             return
-        if self._disable_torque_on_disconnect and self.is_enabled:
+        if not self._disable_torque_on_disconnect:
+            # Piper's low-level SDK disconnect disables the arm. Keep the SDK
+            # session alive when callers explicitly request torque retention;
+            # deploy/reset processes exit immediately after this path.
+            logger.info(f"{self} keeps SDK session open to preserve arm torque.")
+            return
+        if self.is_enabled:
             self.disable()
         self._adapter.disconnect()
         logger.info(f"{self} disconnected.")

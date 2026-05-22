@@ -36,7 +36,7 @@ def main():
             wf = wrist.read()
             gf = global_cam.read()
 
-            left = wf.rgb  # BGR
+            left = cv2.cvtColor(wf.rgb, cv2.COLOR_RGB2BGR)
             right = cv2.resize(gf.rgb, (left.shape[1], left.shape[0]))
 
             # 十字准星

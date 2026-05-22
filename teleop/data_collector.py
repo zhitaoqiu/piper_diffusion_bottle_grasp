@@ -60,7 +60,7 @@ STATE_DIM = 7  # [j1..j6, gripper]
 def build_preview(wrist_frame, global_frame, enabled: bool, recording: bool, n_frames: int):
     preview = None
     if wrist_frame is not None:
-        preview = wrist_frame.rgb.copy()  # already BGR
+        preview = cv2.cvtColor(wrist_frame.rgb, cv2.COLOR_RGB2BGR)
         h = preview.shape[0]
         if recording:
             cv2.circle(preview, (30, 30), 12, (0, 0, 255), -1)
@@ -72,7 +72,7 @@ def build_preview(wrist_frame, global_frame, enabled: bool, recording: bool, n_f
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
 
     if global_frame is not None:
-        g = global_frame.rgb.copy()
+        g = cv2.cvtColor(global_frame.rgb, cv2.COLOR_RGB2BGR)
         if recording:
             cv2.circle(g, (30, 30), 12, (0, 0, 255), -1)
         if preview is not None:
