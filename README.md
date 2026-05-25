@@ -198,6 +198,18 @@ python3 inference/eval.py \
 打开。训练 `adapter_v2` 完整轨迹 checkpoint 后，使用单独入口让 Diffusion
 控制夹爪和完整轨迹：
 
+每次真机测试前，先回到 `adapter_v2` 起点并打开夹爪：
+
+```bash
+python3 scripts/go_adapter_v2_start.py \
+    --can-port can0 \
+    --velocity-pct 20 \
+    -y
+```
+
+这个脚本读取 `config/adapter_v2_start_pose.json`，不要用旧的
+`scripts/go_home.py`；旧脚本对应的是 `config/start_pose.json`，夹爪接近闭合。
+
 ```bash
 python3 inference/deploy_adapter_v2.py \
     --checkpt outputs/train/diffusion_adapter_v2_24demo_5k/checkpoints/002000/pretrained_model \
