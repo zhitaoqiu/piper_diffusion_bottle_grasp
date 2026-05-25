@@ -18,6 +18,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from adapter_v2.piper_bus import PiperMotorsBusV2, PiperMotorsBusV2Config
 from adapter_v2.schema import (
+    GRIPPER_OPEN_M,
     PIPER_GRIPPER_MAX_M,
     QposTolerance,
     STANDARD_START_QPOS,
@@ -45,6 +46,12 @@ def parse_args():
     parser.add_argument("--max-delta-wrist", type=float, default=0.012,
                         help="Per-step limit for J4-J6 absolute target changes.")
     parser.add_argument("--max-gripper-step", type=float, default=0.004)
+    parser.add_argument("--hold-open-steps", type=int, default=35,
+                        help="Keep the gripper open for at least this many policy steps.")
+    parser.add_argument("--hold-open-min-arm-motion", type=float, default=0.08,
+                        help="Keep the gripper open until the arm has moved this far from start.")
+    parser.add_argument("--hold-open-gripper", type=float, default=GRIPPER_OPEN_M,
+                        help="Minimum gripper opening while the hold-open gate is active.")
     parser.add_argument("--action-smooth", type=float, default=0.5,
                         help="EMA weight on current arm target. Gripper is not smoothed.")
     parser.add_argument("--stop-noop-steps", type=int, default=40,
@@ -74,6 +81,12 @@ def parse_args():
         parser.error("--max-steps must be > 0.")
     if args.max_delta_arm <= 0 or args.max_delta_wrist <= 0 or args.max_gripper_step <= 0:
         parser.error("step limits must be > 0.")
+    if args.hold_open_steps < 0:
+        parser.error("--hold-open-steps must be >= 0.")
+    if args.hold_open_min_arm_motion < 0:
+        parser.error("--hold-open-min-arm-motion must be >= 0.")
+    if not 0 <= args.hold_open_gripper <= PIPER_GRIPPER_MAX_M:
+        parser.error(f"--hold-open-gripper must be in [0, {PIPER_GRIPPER_MAX_M}].")
     if not 0 <= args.action_smooth <= 1:
         parser.error("--action-smooth must be in [0, 1].")
     if args.num_inference_steps is not None and args.num_inference_steps <= 0:
@@ -248,6 +261,20 @@ def clip_step_target(raw_target, current, args) -> np.ndarray:
     return target
 
 
+def apply_gripper_hold_open(target, current, trajectory_start, step: int, args) -> tuple[np.ndarray, bool]:
+    arm_motion = float(np.max(np.abs(current[:6] - trajectory_start[:6])))
+    hold_by_step = step < args.hold_open_steps
+    hold_by_motion = arm_motion < args.hold_open_min_arm_motion
+    hold_open = hold_by_step or hold_by_motion
+    if not hold_open:
+        return target, False
+
+    guarded = target.copy()
+    guarded[6] = max(float(guarded[6]), float(current[6]), float(args.hold_open_gripper))
+    guarded[6] = min(guarded[6], PIPER_GRIPPER_MAX_M)
+    return guarded, True
+
+
 def guard_passes(bus, expected_start, args) -> bool:
     if args.skip_start_guard:
         return True
@@ -289,6 +316,11 @@ def main() -> int:
     print(f"  hz          : {args.hz}")
     print(f"  start guard : {'SKIPPED' if args.skip_start_guard else args.start_guard_mode}")
     print(f"  dry run     : {args.dry_run}")
+    print(
+        "  grip gate   : "
+        f"hold open {args.hold_open_steps} steps and "
+        f"until arm moves {args.hold_open_min_arm_motion:.3f} rad"
+    )
     print("=" * 72)
 
     print("\n[1/4] Loading policy ...")
@@ -375,6 +407,7 @@ def main() -> int:
             last_smoothed_arm = None
             noop_count = 0
             stop_reason = "max_steps"
+            trajectory_start = bus.read_qpos()
             print(f"  >>> trajectory start ({args.max_steps} max steps)")
 
             for step in range(args.max_steps):
@@ -402,6 +435,9 @@ def main() -> int:
                         + (1.0 - args.action_smooth) * last_smoothed_arm
                     )
                 last_smoothed_arm = target[:6].copy()
+                target, gripper_gate_active = apply_gripper_hold_open(
+                    target, current, trajectory_start, step, args
+                )
 
                 command_delta = target - current
                 arm_delta = float(np.max(np.abs(command_delta[:6])))
@@ -416,7 +452,8 @@ def main() -> int:
                 ):
                     print(
                         f"  step {step + 1:03d}: arm_delta={arm_delta:.4f} "
-                        f"grip_delta={gripper_delta:.4f} noop={noop_count}"
+                        f"grip_delta={gripper_delta:.4f} noop={noop_count} "
+                        f"grip_gate={'open' if gripper_gate_active else 'policy'}"
                     )
                     print(f"    state : {fmt_vec(current)}")
                     print(f"    model : {fmt_vec(raw_target)}")

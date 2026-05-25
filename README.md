@@ -200,15 +200,20 @@ python3 inference/eval.py \
 
 ```bash
 python3 inference/deploy_adapter_v2.py \
-    --checkpt outputs/train/diffusion_adapter_v2_24demo/checkpoints/last/pretrained_model \
+    --checkpt outputs/train/diffusion_adapter_v2_24demo_5k/checkpoints/002000/pretrained_model \
     --global-camera /dev/video6 \
     --can-port can0 \
+    --velocity-pct 10 \
+    --max-steps 120 \
+    --num-inference-steps 16 \
     --debug-actions
 ```
 
 这个入口默认会用 `config/adapter_v2_start_pose.json` 做起点守卫，未回到
 `adapter_v2` 起始区域时不会发起一条新轨迹。建议先加 `--dry-run` 看动作
-输出，再做真机执行。
+输出，再做真机执行。部署入口还默认启用夹爪开口门控：起步后的前 35 个
+policy step，且机械臂离开起点不足 0.08 rad 前，都会保持夹爪打开，避免
+完整轨迹模型一启动就合爪。
 
 ## 已知问题
 
