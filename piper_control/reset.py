@@ -1,4 +1,4 @@
-"""Explicit reset interpolation helpers for adapter-v2 fixed-start runs."""
+"""Explicit reset interpolation helpers for piper_control fixed-start runs."""
 
 from __future__ import annotations
 

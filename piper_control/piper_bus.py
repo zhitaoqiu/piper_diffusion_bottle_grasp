@@ -1,4 +1,4 @@
-"""SDK-backed radian/meter Piper bus used by adapter-v2 deployment."""
+"""SDK-backed radian/meter Piper bus used by piper_control deployment."""
 
 from __future__ import annotations
 
@@ -6,13 +6,14 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from hardware.piper_wrapper import PiperRobot
+from .config_piper import PiperRobotConfig
+from .piper_robot import PiperRobot
 
 from .schema import MOTOR_POS_KEYS, PIPER_GRIPPER_MAX_M, as_qpos
 
 
 @dataclass(frozen=True)
-class PiperMotorsBusV2Config:
+class PiperMotorsBusConfig:
     can_port: str = "can0"
     gripper_exist: bool = True
     joint_limit_rad: float = 3.14
@@ -22,10 +23,10 @@ class PiperMotorsBusV2Config:
     disable_torque_on_disconnect: bool = False
 
 
-class PiperMotorsBusV2:
+class PiperMotorsBus:
     """Small qpos bus that reuses the locally validated Piper SDK wrapper."""
 
-    def __init__(self, config: PiperMotorsBusV2Config):
+    def __init__(self, config: PiperMotorsBusConfig):
         self.config = config
         self._robot = PiperRobot(
             can_port=config.can_port,
@@ -70,3 +71,36 @@ class PiperMotorsBusV2:
             gripper_effort=self.config.gripper_effort,
         )
         return as_qpos([sent[key] for key in MOTOR_POS_KEYS], label="Piper sent qpos")
+
+    def enter_mit_mode(self) -> None:
+        self._robot.enter_mit_mode()
+
+    def exit_mit_mode(self, *, velocity_pct: int | None = None) -> None:
+        self._robot.exit_mit_mode(
+            velocity_pct=self.config.velocity_pct if velocity_pct is None else velocity_pct
+        )
+
+    def write_mit_qpos(
+        self,
+        qpos,
+        *,
+        qvel=None,
+        kp=10.0,
+        kd=0.8,
+    ) -> np.ndarray:
+        target = as_qpos(qpos, label="Piper MIT target qpos").copy()
+        target[:6] = np.clip(target[:6], -self.config.joint_limit_rad, self.config.joint_limit_rad)
+        target[6] = np.clip(target[6], 0.0, PIPER_GRIPPER_MAX_M)
+        if qvel is None:
+            qvel = np.zeros(6, dtype=np.float32)
+        qvel_arr = np.asarray(qvel, dtype=np.float32).reshape(-1)
+        if qvel_arr.shape[0] < 6:
+            raise ValueError(f"Piper MIT qvel must have at least 6 values, got {qvel_arr.shape}")
+        sent = self._robot.set_joint_mit_positions(
+            target.tolist(),
+            velocities=qvel_arr[:6].tolist(),
+            kp=kp,
+            kd=kd,
+            gripper_effort=self.config.gripper_effort,
+        )
+        return as_qpos([sent[key] for key in MOTOR_POS_KEYS], label="Piper sent MIT qpos")

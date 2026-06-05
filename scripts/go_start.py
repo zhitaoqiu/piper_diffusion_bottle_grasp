@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Move Piper to the adapter-v2 fixed start pose with the gripper open."""
+"""Move Piper to the piper_control fixed start pose with the gripper open."""
 
 from __future__ import annotations
 
@@ -14,20 +14,20 @@ import numpy as np
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from adapter_v2.piper_bus import PiperMotorsBusV2, PiperMotorsBusV2Config
-from adapter_v2.reset import interpolate_qpos_path
-from adapter_v2.schema import GRIPPER_OPEN_M, PIPER_GRIPPER_MAX_M, STANDARD_START_QPOS, as_qpos
+from piper_control.piper_bus import PiperMotorsBus, PiperMotorsBusConfig
+from piper_control.reset import interpolate_qpos_path
+from piper_control.schema import GRIPPER_OPEN_M, PIPER_GRIPPER_MAX_M, STANDARD_START_QPOS, as_qpos
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Reset Piper to adapter-v2 start pose and open the gripper."
+        description="Reset Piper to piper_control start pose and open the gripper."
     )
     parser.add_argument("--can-port", default="can0")
     parser.add_argument(
         "--start-pose-file",
         type=Path,
-        default=PROJECT_ROOT / "config" / "adapter_v2_start_pose.json",
+        default=PROJECT_ROOT / "config" / "piper_control_start_pose.json",
     )
     parser.add_argument("--velocity-pct", type=int, default=20)
     parser.add_argument("--hz", type=float, default=30.0)
@@ -37,7 +37,7 @@ def parse_args() -> argparse.Namespace:
         "--gripper-open",
         type=float,
         default=None,
-        help="Override final gripper opening in meters. Defaults to adapter-v2 open pose.",
+        help="Override final gripper opening in meters. Defaults to piper_control open pose.",
     )
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("-y", "--yes", action="store_true", help="Skip the confirmation prompt.")
@@ -71,7 +71,7 @@ def load_target_qpos(path: Path, gripper_open: float | None) -> np.ndarray:
             raise KeyError(f"{path} must contain 'qpos' or 'joint_positions'.")
         target = as_qpos(values, label=f"start pose file {path}").copy()
     else:
-        print(f"[WARN] start pose file not found: {path}. Using built-in adapter-v2 start pose.")
+        print(f"[WARN] start pose file not found: {path}. Using built-in piper_control start pose.")
         target = STANDARD_START_QPOS.copy()
 
     if gripper_open is None:
@@ -86,7 +86,7 @@ def confirm(args: argparse.Namespace, target: np.ndarray) -> None:
     if args.dry_run or args.yes:
         return
     print()
-    print("This will move the real Piper arm to adapter-v2 start pose:")
+    print("This will move the real Piper arm to piper_control start pose:")
     print(f"  target: {fmt_vec(target)}")
     print(f"  can   : {args.can_port}")
     print("Type YES to continue: ", end="", flush=True)
@@ -100,8 +100,8 @@ def main() -> int:
     target = load_target_qpos(args.start_pose_file, args.gripper_open)
     confirm(args, target)
 
-    bus = PiperMotorsBusV2(
-        PiperMotorsBusV2Config(
+    bus = PiperMotorsBus(
+        PiperMotorsBusConfig(
             can_port=args.can_port,
             velocity_pct=args.velocity_pct,
             disable_torque_on_disconnect=args.disable_torque_on_exit,

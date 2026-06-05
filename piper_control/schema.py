@@ -1,4 +1,4 @@
-"""Schema and measured constants for the Piper adapter-v2 data path."""
+"""Schema and measured constants for the Piper piper_control data path."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ GRIPPER_STRONG_CLOSE_MIN_M = 0.045
 GRIPPER_STRONG_CLOSE_MAX_M = 0.055
 PIPER_GRIPPER_MAX_M = 0.101
 
-# Captured from the validated ACT adapter-v2 start pose on 2026-05-22.
+# Captured from the validated ACT piper_control start pose on 2026-05-22.
 STANDARD_START_QPOS = np.asarray(
     [0.019816, 0.004588, -0.003698, -0.017653, 0.327930, 0.026515, 0.099400],
     dtype=np.float32,
@@ -65,7 +65,7 @@ def action_to_qpos(action: dict[str, float]) -> np.ndarray:
     missing_bare = [name for name in MOTOR_NAMES if name not in action]
     if missing_bare:
         raise KeyError(
-            f"action missing Piper adapter-v2 keys: {missing_dot} "
+            f"action missing Piper piper_control keys: {missing_dot} "
             f"(also tried bare names, missing: {missing_bare})"
         )
     return as_qpos([action[name] for name in MOTOR_NAMES], label="action")

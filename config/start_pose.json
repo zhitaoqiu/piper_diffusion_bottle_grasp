@@ -1,13 +1,16 @@
 {
-  "joint_positions": [
-    -0.008338232000000001,
-    0.767832548,
-    -0.9669906960000001,
-    -0.018856964,
-    0.597858212,
-    -0.067787384,
-    0.00039999999999999996
+  "qpos": [
+    0.019816,
+    0.004588,
+    -0.003698,
+    -0.017653,
+    0.32793,
+    0.026515,
+    0.0994
   ],
-  "saved_at": "2026-05-08 13:43:58",
-  "description": "[j1, j2, j3, j4, j5, j6, gripper]"
+  "timestamp": "2026-05-22T11:22:54.825+08:00",
+  "source": "piper_act_bottle_grasp/config/start_pose.json",
+  "note": "piper_control collection start pose",
+  "gripper_m": 0.09939999878406525,
+  "state_dim": 7
 }

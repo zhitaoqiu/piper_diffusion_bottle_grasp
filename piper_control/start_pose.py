@@ -1,4 +1,4 @@
-"""Fixed-start checks for the Piper adapter-v2 data path."""
+"""Fixed-start checks for the Piper piper_control data path."""
 
 from __future__ import annotations
 
