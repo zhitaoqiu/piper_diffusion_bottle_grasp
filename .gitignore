@@ -11,6 +11,10 @@ data/lerobot_dataset*/
 *.parquet
 data/episodes/
 
+# allow demo assets
+!assets/demo/*.mp4
+!assets/demo/*.gif
+
 # Python
 __pycache__/
 *.pyc

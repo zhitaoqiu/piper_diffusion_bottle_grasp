@@ -1,6 +1,36 @@
-# Piper Diffusion Policy — Bottle Pick & Place Aside
+# Piper Diffusion Policy — Multi-Task Language-Conditioned Grasping
 
-基于 Piper 双臂 + Diffusion Policy（LeRobot 平台）的瓶子抓取并放到一边项目。
+基于 Piper 双臂 + Multi-Task Diffusion Policy（CLIP ViT + DiT）的语言条件抓取项目。支持通过自然语言 prompt 指定抓取目标，模型根据指令执行对应物体的抓取与放置。
+
+## Demo — 48 条多任务采集数据集
+
+以下是来自 `two_obj_language_48_all_clean` 数据集的真实采集轨迹展示，每条轨迹包含全局相机 + 腕部相机双视角，模型根据语言 prompt 执行不同任务：
+
+### Prompt: "Pick up the green object and put it into the box."
+
+![绿色物体抓取](assets/demo/ep0_green_pickup.gif)
+
+### Prompt: "Pick up the blue object and put it into the box."
+
+![蓝色物体抓取](assets/demo/ep1_blue_pickup.gif)
+
+> 完整视频文件见 [assets/demo/](assets/demo/)
+
+## 多任务推理（Prompt 版本）
+
+使用 `inference/deploy_multi_task.py` 进行语言条件推理部署，通过 `--task` 参数传入自然语言指令：
+
+```bash
+python3 inference/deploy_multi_task.py \
+    --checkpt <checkpoint_path> \
+    --task "Pick up the green object and put it into the box." \
+    --can-port can0 \
+    --velocity-pct 10 \
+    --max-steps 120 \
+    --num-inference-steps 16
+```
+
+模型使用 CLIP ViT 视觉编码器 + MultiTaskDiT 架构，根据 `--task` 的语义选择正确的抓取目标。
 
 ## 硬件配置
 
