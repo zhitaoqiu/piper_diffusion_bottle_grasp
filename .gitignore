@@ -44,3 +44,7 @@ expert/
 
 # Claude config
 .claude/
+
+# Backup & logs
+.backup/
+logs/
